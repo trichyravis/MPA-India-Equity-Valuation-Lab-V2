@@ -10,7 +10,7 @@ import requests
 import streamlit as st
 import yfinance as yf
 
-BUILD_ID = "2026-08-26-CLEAN-01"
+BUILD_ID = "2026-08-26-VISIBILITY-02"
 
 # ------------------------------------------------------------
 # PAGE
@@ -31,52 +31,203 @@ MUTED = "#8892b0"
 
 st.html(f"""
 <style>
+:root {{
+  --gold: {GOLD};
+  --blue: {BLUE};
+  --mid: {MID};
+  --card: {CARD};
+  --text: {TXT};
+  --muted: #b9c6da;
+  --border: rgba(255,215,0,.28);
+}}
+
 .stApp {{
-  background: linear-gradient(135deg,#1a2332,#243447,#2a3f5f) fixed;
+  background: linear-gradient(135deg,#182436 0%,#20344c 55%,#263e5d 100%) fixed;
+  color: var(--text) !important;
 }}
 #MainMenu, header[data-testid="stHeader"], footer {{ visibility:hidden; }}
-.block-container {{ padding-top:1rem; max-width:1220px; }}
+.block-container {{ padding-top:1rem; padding-bottom:2rem; max-width:1220px; }}
 
-h1,h2,h3,h4 {{ color:{GOLD} !important; }}
+/* GLOBAL TEXT VISIBILITY */
+.stApp p, .stApp span, .stApp label, .stApp li, .stApp div {{
+  color: var(--text);
+}}
+h1,h2,h3,h4,h5,h6 {{
+  color: var(--gold) !important;
+  -webkit-text-fill-color: var(--gold) !important;
+}}
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li {{
+  color: #eef4ff !important;
+  -webkit-text-fill-color: #eef4ff !important;
+}}
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] *,
+small {{
+  color: #c5d1e3 !important;
+  -webkit-text-fill-color: #c5d1e3 !important;
+}}
 
+/* TABS */
 .stTabs [data-baseweb="tab-list"] {{
-  gap:6px; background:rgba(17,34,64,.55); padding:6px;
-  border-radius:12px; border:1px solid rgba(255,215,0,.18);
+  gap:7px;
+  background:rgba(17,34,64,.72);
+  padding:7px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  flex-wrap:wrap;
 }}
 .stTabs [data-baseweb="tab"] {{
-  border-radius:8px; padding:8px 14px; color:#c7d3e8 !important;
+  background:#172842 !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  border-radius:8px !important;
+  padding:9px 15px !important;
 }}
-.stTabs [aria-selected="true"] {{ background:{GOLD} !important; }}
-.stTabs [aria-selected="true"] * {{
-  color:{BLUE} !important; -webkit-text-fill-color:{BLUE} !important;
+.stTabs [data-baseweb="tab"],
+.stTabs [data-baseweb="tab"] *,
+.stTabs [data-baseweb="tab"] p {{
+  color:#f2f6ff !important;
+  -webkit-text-fill-color:#f2f6ff !important;
+  font-weight:700 !important;
 }}
+.stTabs [aria-selected="true"] {{
+  background:var(--gold) !important;
+  border-color:var(--gold) !important;
+}}
+.stTabs [aria-selected="true"],
+.stTabs [aria-selected="true"] *,
+.stTabs [aria-selected="true"] p {{
+  color:#07182b !important;
+  -webkit-text-fill-color:#07182b !important;
+}}
+
+/* SIDEBAR */
 [data-testid="stSidebar"] {{
-  background:linear-gradient(180deg,#0d1b2a,#112240) !important;
+  background:linear-gradient(180deg,#091827,#102b47) !important;
+  border-right:1px solid var(--border);
 }}
-[data-testid="stSidebar"] * {{
-  color:{TXT} !important; -webkit-text-fill-color:{TXT} !important;
+[data-testid="stSidebar"] *,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label {{
+  color:#f5f8ff !important;
+  -webkit-text-fill-color:#f5f8ff !important;
 }}
+[data-testid="stSidebar"] [data-baseweb="select"] > div,
+[data-testid="stSidebar"] [data-baseweb="input"] > div,
+[data-testid="stSidebar"] input {{
+  background:#162b49 !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+}}
+
+/* KPI CARDS */
 div[data-testid="stMetric"] {{
-  background:{CARD}; border:1px solid rgba(255,215,0,.18);
-  border-radius:14px; padding:14px 16px;
+  background:linear-gradient(145deg,#102443,#132b50);
+  border:1px solid var(--border);
+  border-radius:15px;
+  padding:15px 18px;
+  box-shadow:0 5px 16px rgba(0,0,0,.22);
 }}
-div[data-testid="stMetricValue"] {{ color:{GOLD} !important; }}
+div[data-testid="stMetricLabel"],
+div[data-testid="stMetricLabel"] *,
+div[data-testid="stMetricLabel"] p {{
+  color:#f1f5ff !important;
+  -webkit-text-fill-color:#f1f5ff !important;
+  font-weight:700 !important;
+}}
+div[data-testid="stMetricValue"],
+div[data-testid="stMetricValue"] * {{
+  color:var(--gold) !important;
+  -webkit-text-fill-color:var(--gold) !important;
+  font-weight:800 !important;
+}}
+
+/* INPUTS */
+[data-testid="stWidgetLabel"] *,
+[data-testid="stWidgetLabel"] p {{
+  color:#f1f5ff !important;
+  -webkit-text-fill-color:#f1f5ff !important;
+  font-weight:650 !important;
+}}
+[data-baseweb="select"] > div,
+[data-baseweb="input"] > div,
+.stNumberInput input,
+.stTextInput input {{
+  background:#f7f8fc !important;
+  color:#152033 !important;
+  -webkit-text-fill-color:#152033 !important;
+}}
+[data-baseweb="tag"] {{
+  background:#174a7c !important;
+}}
+[data-baseweb="tag"] * {{
+  color:white !important;
+  -webkit-text-fill-color:white !important;
+}}
+
+/* DATAFRAMES */
 [data-testid="stDataFrame"] {{
-  border:1px solid rgba(255,215,0,.16);
-  border-radius:12px; overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  background:#ffffff;
 }}
+[data-testid="stDataFrame"] * {{
+  color:#172033 !important;
+  -webkit-text-fill-color:#172033 !important;
+}}
+
+/* BUTTONS */
 .stButton button,.stDownloadButton button {{
-  background:{CARD} !important;
-  border:1px solid rgba(255,215,0,.35) !important;
+  background:#102443 !important;
+  border:1px solid rgba(255,215,0,.55) !important;
   border-radius:9px !important;
 }}
 .stButton button *, .stDownloadButton button * {{
-  color:{GOLD} !important; -webkit-text-fill-color:{GOLD} !important;
-  font-weight:700 !important;
+  color:var(--gold) !important;
+  -webkit-text-fill-color:var(--gold) !important;
+  font-weight:800 !important;
 }}
+.stButton button:hover,.stDownloadButton button:hover {{
+  background:#17345e !important;
+  border-color:var(--gold) !important;
+}}
+
+/* CARDS */
 .mp-card {{
-  background:{CARD}; border:1px solid rgba(255,215,0,.18);
-  border-radius:14px; padding:17px 20px; margin-bottom:14px;
+  background:linear-gradient(145deg,#102443,#13294a);
+  border:1px solid var(--border);
+  border-radius:15px;
+  padding:18px 22px;
+  margin-bottom:16px;
+  box-shadow:0 5px 18px rgba(0,0,0,.22);
+}}
+.mp-card, .mp-card * {{
+  color:#eef4ff !important;
+  -webkit-text-fill-color:#eef4ff !important;
+}}
+.mp-card b {{
+  color:var(--gold) !important;
+  -webkit-text-fill-color:var(--gold) !important;
+}}
+
+/* EXPANDERS + FILE UPLOADER */
+[data-testid="stExpander"] details {{
+  background:#102443 !important;
+  border:1px solid var(--border) !important;
+}}
+[data-testid="stExpander"] summary *,
+[data-testid="stExpander"] details * {{
+  color:#eef4ff !important;
+  -webkit-text-fill-color:#eef4ff !important;
+}}
+[data-testid="stFileUploaderDropzone"] {{
+  background:#102443 !important;
+  border-color:var(--border) !important;
+}}
+[data-testid="stFileUploaderDropzone"] * {{
+  color:#eef4ff !important;
+  -webkit-text-fill-color:#eef4ff !important;
 }}
 </style>
 """)
@@ -98,10 +249,14 @@ padding:20px 24px;border:1px solid rgba(255,215,0,.3);margin-bottom:10px;">
 
 st.html(f"""
 <div class="mp-card">
-<b style="color:{GOLD};">Purpose:</b>
-identify financially stronger, reasonably valued Indian companies using
-<b>P/B</b>, <b>ROE</b> and <b>Net Worth</b>, with sector-wise rankings and historical analysis.
-<br><span style="color:{MUTED};font-size:12px;">Build: {BUILD_ID}</span>
+  <div style="font-size:16px;line-height:1.65;color:#eef4ff !important;-webkit-text-fill-color:#eef4ff !important;">
+    <b style="color:{GOLD} !important;-webkit-text-fill-color:{GOLD} !important;">Purpose:</b>
+    identify financially stronger, reasonably valued Indian companies using
+    <b>P/B</b>, <b>ROE</b> and <b>Net Worth</b>, with sector-wise rankings and historical analysis.
+  </div>
+  <div style="margin-top:8px;color:#c5d1e3 !important;-webkit-text-fill-color:#c5d1e3 !important;font-size:12px;">
+    Build: {BUILD_ID}
+  </div>
 </div>
 """)
 
@@ -273,6 +428,90 @@ def display_df(df):
             out[c]=out[c].map(fn)
     return out
 
+
+@st.cache_data(ttl=12*3600, show_spinner=False)
+def fetch_annual_history(symbol, years=10):
+    """
+    Reconstruct annual Net Worth and ROE from annual statements.
+    Historical P/B uses FY-end market price / book value per share.
+    """
+    t = yf.Ticker(symbol + ".NS")
+    try:
+        bs = t.balance_sheet
+        inc = t.income_stmt
+    except Exception:
+        return pd.DataFrame()
+
+    if bs is None or bs.empty or inc is None or inc.empty:
+        return pd.DataFrame()
+
+    def find_row(df, candidates):
+        for c in candidates:
+            if c in df.index:
+                return pd.to_numeric(df.loc[c], errors="coerce")
+        return pd.Series(dtype=float)
+
+    eq = find_row(bs, ["Stockholders Equity","Total Equity Gross Minority Interest","Common Stock Equity"])
+    ni = find_row(inc, ["Net Income","Net Income Common Stockholders"])
+    if eq.empty:
+        return pd.DataFrame()
+
+    dates = sorted(set(eq.dropna().index), reverse=False)[-years:]
+    rows=[]
+    prev_eq=np.nan
+
+    # price history covering all statement dates
+    try:
+        start = pd.Timestamp(min(dates)).strftime("%Y-%m-%d")
+        end = (pd.Timestamp(max(dates)) + pd.Timedelta(days=10)).strftime("%Y-%m-%d")
+        ph = yf.download(symbol+".NS", start=start, end=end, progress=False, auto_adjust=False)
+        if isinstance(ph.columns, pd.MultiIndex):
+            close = ph["Close"].iloc[:,0]
+        else:
+            close = ph["Close"]
+        close.index = pd.to_datetime(close.index)
+    except Exception:
+        close = pd.Series(dtype=float)
+
+    for d in dates:
+        dts=pd.Timestamp(d)
+        nw=num(eq.get(d))
+        profit=num(ni.get(d)) if not ni.empty else np.nan
+        avg_eq=np.nanmean([prev_eq,nw]) if np.isfinite(prev_eq) else nw
+        roe=(profit/avg_eq*100) if np.isfinite(profit) and np.isfinite(avg_eq) and avg_eq!=0 else np.nan
+
+        # derive BVPS from current shares around statement date where possible
+        bvps=np.nan
+        try:
+            shares_hist = t.get_shares_full(start=(dts-pd.Timedelta(days=30)).strftime("%Y-%m-%d"),
+                                            end=(dts+pd.Timedelta(days=5)).strftime("%Y-%m-%d"))
+            shares = float(shares_hist.dropna().iloc[-1]) if shares_hist is not None and len(shares_hist.dropna()) else np.nan
+            if np.isfinite(shares) and shares>0:
+                bvps = nw / shares
+        except Exception:
+            pass
+
+        fy_price=np.nan
+        if len(close):
+            eligible=close.loc[(close.index<=dts) & (close.index>=dts-pd.Timedelta(days=10))].dropna()
+            if len(eligible):
+                fy_price=float(eligible.iloc[-1])
+
+        pb = fy_price/bvps if np.isfinite(fy_price) and np.isfinite(bvps) and bvps>0 else np.nan
+
+        rows.append({
+            "Fiscal Year": int(dts.year),
+            "FY-end Price (₹)": fy_price,
+            "Book Value/Share (₹)": bvps,
+            "P/B (x)": pb,
+            "Net Worth (₹ Cr)": nw/1e7 if np.isfinite(nw) else np.nan,
+            "Net Profit (₹ Cr)": profit/1e7 if np.isfinite(profit) else np.nan,
+            "ROE (%)": roe,
+        })
+        prev_eq=nw
+
+    return pd.DataFrame(rows).sort_values("Fiscal Year").reset_index(drop=True)
+
 def plot_theme(fig, height=430):
     fig.update_layout(
         height=height,
@@ -369,15 +608,20 @@ c3.metric("Sectors",screened["Sector"].nunique() if len(screened) else 0)
 c4.metric("Median P/B",f"{screened['P/B (x)'].median():.2f}x" if len(screened) else "—")
 c5.metric("Median ROE",f"{screened['ROE (%)'].median():.2f}%" if len(screened) else "—")
 
-st.caption(
-    f"Before filters: {base['Sector'].nunique()} sectors represented. "
-    f"After filters: {screened['Sector'].nunique() if len(screened) else 0} sectors."
-)
+st.html(f"""
+<div style="margin:10px 0 18px 0;padding:10px 14px;border-radius:10px;
+background:rgba(17,34,64,.70);border:1px solid rgba(255,215,0,.18);
+color:#dbe5f5 !important;-webkit-text-fill-color:#dbe5f5 !important;font-size:13px;">
+  <b style="color:{GOLD} !important;-webkit-text-fill-color:{GOLD} !important;">Coverage:</b>
+  {base['Sector'].nunique()} sectors before filters ·
+  {screened['Sector'].nunique() if len(screened) else 0} sectors after filters
+</div>
+""")
 
 st.markdown(f"<div style='color:{GOLD};font-weight:700;margin:10px 0;'>VALUATION LAB · INTERACTIVE ANALYSIS</div>",unsafe_allow_html=True)
 
-tab1,tab2,tab3,tab4,tab5=st.tabs(
-    ["🏆 Sector Leaders","📋 Full Ranking","📊 Charts","🧮 Methodology","⬇️ Excel"]
+tab1,tab2,tab3,tab4,tab5,tab6=st.tabs(
+    ["🏆 Sector Leaders","📋 Full Ranking","📈 10-Year History","📊 Charts","🧮 Methodology","⬇️ Excel"]
 )
 
 display_cols=[
@@ -414,7 +658,51 @@ with tab2:
         height=650,
     )
 
+
 with tab3:
+    st.subheader("10-Year Historical Analysis")
+    st.caption("Select a company to review the trend in P/B, Net Worth and ROE across available annual statements.")
+
+    hist_universe = screened if len(screened) else base
+    hist_universe = hist_universe.dropna(subset=["Symbol"]).copy()
+    hist_universe["Choice"] = hist_universe["Company"].astype(str) + " (" + hist_universe["Symbol"].astype(str) + ")"
+
+    if len(hist_universe):
+        choice = st.selectbox("Company", hist_universe["Choice"].tolist())
+        hrow = hist_universe.loc[hist_universe["Choice"]==choice].iloc[0]
+        hs = hrow["Symbol"]
+        hc = hrow["Company"]
+
+        with st.spinner(f"Loading annual history for {hc}..."):
+            hist = fetch_annual_history(hs, years=10)
+
+        if hist.empty:
+            st.warning("Annual history could not be reconstructed from the current public feed for this company.")
+        else:
+            st.dataframe(display_df(hist), use_container_width=True, hide_index=True)
+
+            g1,g2=st.columns(2)
+            with g1:
+                fig=px.line(hist,x="Fiscal Year",y="P/B (x)",markers=True,title=f"{hc} — P/B trend")
+                st.plotly_chart(plot_theme(fig,390),use_container_width=True)
+            with g2:
+                fig=px.line(hist,x="Fiscal Year",y="ROE (%)",markers=True,title=f"{hc} — ROE trend")
+                st.plotly_chart(plot_theme(fig,390),use_container_width=True)
+
+            fig=px.bar(hist,x="Fiscal Year",y="Net Worth (₹ Cr)",title=f"{hc} — Net Worth growth")
+            st.plotly_chart(plot_theme(fig,420),use_container_width=True)
+
+            valid=hist.dropna(subset=["P/B (x)","ROE (%)"])
+            if len(valid)>=2:
+                fig=px.scatter(
+                    valid,x="ROE (%)",y="P/B (x)",size="Net Worth (₹ Cr)",
+                    color="Fiscal Year",hover_name="Fiscal Year",
+                    title="P/B versus ROE through time"
+                )
+                st.plotly_chart(plot_theme(fig,430),use_container_width=True)
+
+
+with tab4:
     st.subheader("Cross-sectional valuation charts")
     if len(screened):
         fig=px.scatter(
@@ -440,7 +728,7 @@ with tab3:
         )
         st.plotly_chart(plot_theme(fig2,560),use_container_width=True)
 
-with tab4:
+with tab5:
     st.subheader("Methodology")
     st.markdown(r"""
 ### Price-to-Book
@@ -473,7 +761,7 @@ ROE=\frac{\text{Net Income}}{\text{Average Shareholders' Equity}}
 A low P/B is not automatically attractive. It may reflect weak profitability, asset-quality concerns or negative expectations.
 """)
 
-with tab5:
+with tab6:
     st.subheader("Download Excel")
     out=io.BytesIO()
     with pd.ExcelWriter(out,engine="xlsxwriter") as writer:
