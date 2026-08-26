@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-BUILD_ID = "MPA-VALUATION-V2.2-NO-PROGRESSCOLUMN"
+BUILD_ID = "MPA-VALUATION-V2.3-EXPLAINED"
 
 # -----------------------------------------------------------------------------
 # BRAND PALETTE — follows the RBI Spread app
@@ -261,6 +261,68 @@ def classify_signal(row):
     if v >= 65 and q < 40:
         return "Potential Value Trap"
     return "Fair / Mixed"
+
+
+def ordinal(n):
+    try:
+        n = int(n)
+    except Exception:
+        return str(n)
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1:"st", 2:"nd", 3:"rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+def percentile_sentence(score, label):
+    if not np.isfinite(score):
+        return f"{label}: insufficient data."
+    return f"{label}: approximately {score:.0f}th percentile within the sector."
+
+def explain_rank(row, sector_count):
+    company = row.get("Company", "Company")
+    sector = row.get("Sector", "sector")
+    rank = row.get("Sector Rank", np.nan)
+    pb = row.get("P/B (x)", np.nan)
+    sector_pb = row.get("Sector_Median_PB", np.nan)
+    roe = row.get("ROE (%)", np.nan)
+    nwg = row.get("Net Worth CAGR (%)", np.nan)
+    val = row.get("Valuation Score", np.nan)
+    prof = row.get("Profitability Score", np.nan)
+    qual = row.get("Quality Score", np.nan)
+    comp = row.get("Composite Score", np.nan)
+    signal = row.get("Signal", "")
+
+    parts = []
+    if np.isfinite(pb) and np.isfinite(sector_pb) and sector_pb > 0:
+        diff = (pb / sector_pb - 1) * 100
+        if diff < 0:
+            parts.append(f"P/B is {abs(diff):.1f}% below the sector median")
+        else:
+            parts.append(f"P/B is {diff:.1f}% above the sector median")
+    if np.isfinite(roe):
+        parts.append(f"ROE is {roe:.2f}%")
+    if np.isfinite(nwg):
+        parts.append(f"Net Worth CAGR is {nwg:.2f}%")
+
+    rank_txt = ordinal(rank) if pd.notna(rank) else "unavailable"
+    detail = "; ".join(parts) if parts else "Some component data is unavailable."
+
+    return (
+        f"**{company}** ranks **{rank_txt} out of {sector_count}** in **{sector}**. "
+        f"{detail}. "
+        f"The component scores are Valuation **{val:.1f}**, Profitability **{prof:.1f}**, "
+        f"Quality **{qual:.1f}**, producing a Composite Score of **{comp:.1f}**. "
+        f"The resulting interpretation is **{signal}**."
+    )
+
+def add_explainer(title, body_md, latex_lines=None):
+    with st.expander(f"ℹ️ How is {title} calculated?", expanded=False):
+        if latex_lines:
+            for eq in latex_lines:
+                st.latex(eq)
+        st.markdown(body_md)
+
 
 # -----------------------------------------------------------------------------
 # HEADER — copied in structure from RBI Spread App
@@ -928,6 +990,20 @@ with tabs[0]:
             }
         )
 
+        add_explainer(
+            "the sector snapshot",
+            """
+The sector table is a summary of the companies that pass the current filters.
+
+- **Median P/B** = median Price-to-Book ratio of the filtered companies in that sector.
+- **Median ROE** = median Return on Equity of the filtered companies in that sector.
+- **Median Net Worth CAGR** = median growth rate of shareholders' equity.
+- **Median Composite** = median of the company-level composite scores in that sector.
+
+The purpose is to compare sectors on a like-for-like basis without assuming that one common P/B multiple is appropriate for every industry.
+"""
+        )
+
         g1, g2 = st.columns(2)
         with g1:
             fig = px.scatter(
@@ -1011,6 +1087,41 @@ with tabs[1]:
             }
         )
 
+
+        add_explainer(
+            "the ranking",
+            f"""
+### Valuation Score
+The Valuation Score is calculated **within the selected sector**:
+
+- **60% Sector-relative P/B score** — lower positive P/B gets a higher percentile score.
+- **40% P/B-to-ROE score** — a lower P/B relative to the company's ROE gets a higher score.
+
+### Profitability Score
+This is the company's **ROE percentile within its sector**.
+
+A score of 80 means the company has an ROE roughly better than 80% of the companies in the same sector.
+
+### Quality Score
+Quality combines:
+
+- **45% Net Worth Growth Score**
+- **30% Earnings Consistency Score**
+- **25% ROE Stability Score**
+
+### Composite Score
+The current sidebar weights are:
+
+**Valuation {w_val}% · Profitability {w_prof}% · Quality {w_quality}%**
+
+The composite score is the weighted average of these three dimensions.
+""",
+            latex_lines=[
+                r"\text{Valuation Score}=0.60(\text{Sector P/B Score})+0.40(\text{P/B-to-ROE Score})",
+                rf"\text{{Composite}}=\frac{{{w_val}V+{w_prof}P+{w_quality}Q}}{{{w_val+w_prof+w_quality}}}"
+            ]
+        )
+
         fig = px.scatter(
             ss,
             x="Valuation Score",
@@ -1071,6 +1182,44 @@ with tabs[2]:
             )
             st.plotly_chart(plotly_theme(fig, 320, legend=False), use_container_width=True)
 
+
+        st.markdown("#### Why did this company receive this rank?")
+        sector_count = len(screened[screened["Sector"] == r["Sector"]])
+        st.info(explain_rank(r, sector_count))
+
+        with st.expander("🔎 Score-by-score explanation", expanded=False):
+            st.markdown(
+                f"""
+**Valuation Score = {r['Valuation Score']:.1f}**
+
+- Sector-relative P/B score: **{r['PB Sector Score']:.1f}**
+- P/B-to-ROE score: **{r['PB/ROE Score']:.1f}**
+- Company P/B: **{r['P/B (x)']:.2f}x**
+- Sector median P/B: **{r['Sector_Median_PB']:.2f}x**
+- P/B ÷ ROE: **{r['P/B ÷ ROE']:.4f}**
+
+**Profitability Score = {r['Profitability Score']:.1f}**
+
+- ROE: **{r['ROE (%)']:.2f}%**
+- {percentile_sentence(r['ROE Score'], 'ROE position')}
+
+**Quality Score = {r['Quality Score']:.1f}**
+
+- Net Worth growth score: **{r['NW Growth Score']:.1f}**
+- Earnings consistency score: **{r['Earnings Consistency Score']:.1f}**
+- ROE stability score: **{r['ROE Stability Score']:.1f}**
+
+**Composite Score = {r['Composite Score']:.1f}**
+
+Current weights: Valuation **{w_val}%**, Profitability **{w_prof}%**, Quality **{w_quality}%**.
+"""
+            )
+            st.latex(
+                rf"\text{{Composite}}=\frac{{{w_val}({r['Valuation Score']:.1f})+"
+                rf"{w_prof}({r['Profitability Score']:.1f})+"
+                rf"{w_quality}({r['Quality Score']:.1f})}}{{{w_val+w_prof+w_quality}}}"
+            )
+
         st.markdown("#### Earnings link")
         st.latex(r"\frac{P}{B}=\frac{P}{E}\times ROE")
         if np.isfinite(r["P/E (x)"]) and np.isfinite(r["ROE (%)"]):
@@ -1130,6 +1279,24 @@ with tabs[3]:
                 }
             )
 
+
+            add_explainer(
+                "the historical measures",
+                """
+- **Net Worth** = Equity Capital + Reserves from annual consolidated statements.
+- **ROE** = Net Profit divided by average Net Worth.
+- **Book Value per Share** is reconstructed using the implied share base from Net Profit ÷ EPS.
+- **Historical P/B** = fiscal-year-end market price ÷ Book Value per Share.
+- **10-Year Median P/B** gives a historical reference point for judging whether the current multiple is unusually high or low.
+
+Historical numbers are intended for analysis and teaching; validate against company filings before publication.
+""",
+                latex_lines=[
+                    r"ROE_t=\frac{\text{Net Profit}_t}{\text{Average Net Worth}_t}",
+                    r"P/B_t=\frac{\text{FY-end Price}_t}{\text{Book Value per Share}_t}"
+                ]
+            )
+
             g1,g2 = st.columns(2)
             with g1:
                 fig = px.line(hist, x="Fiscal Year", y="P/B (x)", markers=True, title="Historical P/B")
@@ -1162,6 +1329,30 @@ with tabs[4]:
         f"Long-run Growth = **{growth:.1f}%**. Change these in the sidebar."
     )
 
+    add_explainer(
+        "Justified P/B",
+        f"""
+The model asks: **What P/B multiple is justified by the company's profitability, growth and required return?**
+
+1. Take the company's current ROE.
+2. Subtract the assumed long-run growth rate **g = {growth:.1f}%**.
+3. Divide by **Cost of Equity − growth = {cost_equity:.1f}% − {growth:.1f}%**.
+4. Compare the resulting Justified P/B with the actual market P/B.
+
+### Justified Gap
+A positive gap means the model-implied P/B is above the market P/B.
+
+A negative gap means the actual market P/B is above the model-implied P/B.
+
+This is a **valuation signal**, not an investment recommendation.
+""",
+        latex_lines=[
+            r"\text{Justified P/B}=\frac{ROE-g}{K_e-g}",
+            r"\text{Justified Gap}=\frac{\text{Justified P/B}-\text{Actual P/B}}{\text{Justified P/B}}\times100"
+        ]
+    )
+
+
     if len(screened):
         val = screened.copy()
         val["Gap Status"] = np.select(
@@ -1192,6 +1383,30 @@ with tabs[4]:
                 "Quality Score": st.column_config.NumberColumn("Quality", format="%.1f"),
             }
         )
+
+
+        st.markdown("#### Worked valuation example")
+        example_labels = (val["Company"] + " (" + val["Symbol"] + ")").tolist()
+        ex_label = st.selectbox("Choose company for step-by-step calculation", example_labels, key="valuation_example")
+        ex = val.loc[(val["Company"] + " (" + val["Symbol"] + ")") == ex_label].iloc[0]
+
+        if np.isfinite(ex["ROE (%)"]) and np.isfinite(ex["Justified P/B (x)"]):
+            numerator = ex["ROE (%)"] - growth
+            denominator = cost_equity - growth
+            st.latex(
+                rf"\text{{Justified P/B}}="
+                rf"\frac{{{ex['ROE (%)']:.2f}\%-{growth:.2f}\%}}{{{cost_equity:.2f}\%-{growth:.2f}\%}}"
+                rf"={ex['Justified P/B (x)']:.2f}\times"
+            )
+            st.markdown(
+                f"""
+**Actual P/B:** {ex['P/B (x)']:.2f}x  
+**Justified P/B:** {ex['Justified P/B (x)']:.2f}x  
+**Model Gap:** {ex['Justified Gap (%)']:.2f}%  
+
+This means the market multiple is being compared with the multiple implied by the selected ROE, growth and cost-of-equity assumptions.
+"""
+            )
 
         top_gap = val.dropna(subset=["Justified Gap (%)"]).nlargest(15, "Justified Gap (%)").sort_values("Justified Gap (%)")
         if len(top_gap):
@@ -1253,7 +1468,41 @@ with tabs[5]:
     })
     st.dataframe(methodology, use_container_width=True, hide_index=True)
 
-    st.markdown("### 7. Signal interpretation")
+
+    st.markdown("### 7. Ranking workflow")
+    st.markdown(
+        """
+1. **Select the universe** — NIFTY 100 or NIFTY 500.
+2. **Apply quality filters** — minimum ROE, maximum P/B and positive Net Worth if selected.
+3. **Group companies by sector.**
+4. **Convert each metric into a sector percentile score.**
+5. **Calculate Valuation, Profitability and Quality scores.**
+6. **Apply the sidebar weights** to obtain the Composite Score.
+7. **Rank companies within the sector** using the Composite Score.
+8. **Assign an interpretation signal** based on the combination of valuation and quality.
+"""
+    )
+
+    st.markdown("### 8. Key table columns")
+    definitions = pd.DataFrame({
+        "Column":[
+            "P/B vs Sector","P/B ÷ ROE","Valuation Score","Profitability Score",
+            "Quality Score","Composite Score","Justified Gap (%)","Signal"
+        ],
+        "Meaning":[
+            "Company P/B divided by sector median P/B. Below 1.0 means the company trades below sector median.",
+            "P/B divided by ROE percentage. Used as a relative valuation-efficiency diagnostic.",
+            "60% sector P/B percentile + 40% P/B-to-ROE percentile.",
+            "Sector percentile of ROE.",
+            "45% Net Worth growth + 30% earnings consistency + 25% ROE stability.",
+            "Weighted average of Valuation, Profitability and Quality scores.",
+            "Percentage difference between Justified P/B and Actual P/B.",
+            "Interpretive label based on valuation and quality score combinations."
+        ]
+    })
+    st.dataframe(definitions, use_container_width=True, hide_index=True)
+
+    st.markdown("### 9. Signal interpretation")
     st.write(
         "**Attractive Relative Valuation** requires both a strong valuation score and acceptable quality. "
         "**Potential Value Trap** identifies low valuation with weak quality. "

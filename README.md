@@ -18,3 +18,14 @@ streamlit run app.py
 ```
 
 Build: MPA-VALUATION-V2.0-20260826
+
+
+## V2.3 Explained
+- Added calculation explainers for Valuation, Profitability, Quality and Composite scores.
+- Added dynamic ranking formula based on sidebar weights.
+- Added "Why did this company receive this rank?" narrative.
+- Added score-by-score decomposition.
+- Added step-by-step Justified P/B worked example.
+- Added historical measure explanations and table-column definitions.
+
+Build: MPA-VALUATION-V2.3-EXPLAINED
