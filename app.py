@@ -901,7 +901,7 @@ with tab1:
                 "Net Worth (₹ Cr)": "₹{:,.0f}",
                 "Market Cap (₹ Cr)": "₹{:,.0f}",
                 "Composite Score": "{:.2f}",
-            }).background_gradient(subset=["Composite Score"]),
+            }),
             use_container_width=True,
             height=620,
         )
@@ -917,7 +917,7 @@ with tab2:
             "Net Worth (₹ Cr)": "₹{:,.0f}",
             "Market Cap (₹ Cr)": "₹{:,.0f}",
             "Composite Score": "{:.2f}",
-        }).background_gradient(subset=["Composite Score"]),
+        }),
         use_container_width=True,
         height=680,
     )
