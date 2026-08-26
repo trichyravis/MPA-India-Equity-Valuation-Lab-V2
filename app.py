@@ -1,5 +1,4 @@
 
-
 # =============================================================================
 # The Mountain Path Academy — India Equity Valuation Lab V2
 # Professional P/B • ROE • Net Worth • Sector-Relative Valuation
@@ -28,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-BUILD_ID = "MPA-VALUATION-V2.0-20260826"
+BUILD_ID = "MPA-VALUATION-V2.2-NO-PROGRESSCOLUMN"
 
 # -----------------------------------------------------------------------------
 # BRAND PALETTE — follows the RBI Spread app
@@ -925,10 +924,7 @@ with tabs[0]:
                 "Median_PB": st.column_config.NumberColumn("Median P/B", format="%.2fx"),
                 "Median_ROE": st.column_config.NumberColumn("Median ROE", format="%.2f%%"),
                 "Median_NW_Growth": st.column_config.NumberColumn("Median NW CAGR", format="%.2f%%"),
-                "Median_Composite": st.column_config.ProgressColumn(
-                    "Median Composite",
-                    min_value=0, max_value=100, format="%.1f"
-                ),
+                "Median_Composite": st.column_config.NumberColumn("Median Composite", format="%.1f"),
             }
         )
 
@@ -1008,10 +1004,10 @@ with tabs[1]:
                 "P/B vs Sector": st.column_config.NumberColumn("P/B ÷ Sector Median", format="%.2f"),
                 "ROE (%)": st.column_config.NumberColumn("ROE", format="%.2f%%"),
                 "Net Worth CAGR (%)": st.column_config.NumberColumn("NW CAGR", format="%.2f%%"),
-                "Valuation Score": st.column_config.ProgressColumn("Valuation", 0, 100, format="%.1f"),
-                "Profitability Score": st.column_config.ProgressColumn("Profitability", 0, 100, format="%.1f"),
-                "Quality Score": st.column_config.ProgressColumn("Quality", 0, 100, format="%.1f"),
-                "Composite Score": st.column_config.ProgressColumn("Composite", 0, 100, format="%.1f"),
+                "Valuation Score": st.column_config.NumberColumn("Valuation", format="%.1f"),
+                "Profitability Score": st.column_config.NumberColumn("Profitability", format="%.1f"),
+                "Quality Score": st.column_config.NumberColumn("Quality", format="%.1f"),
+                "Composite Score": st.column_config.NumberColumn("Composite", format="%.1f"),
             }
         )
 
@@ -1192,8 +1188,8 @@ with tabs[4]:
                 "Justified P/B (x)": st.column_config.NumberColumn("Justified P/B", format="%.2fx"),
                 "Justified Gap (%)": st.column_config.NumberColumn("Model Gap", format="%.2f%%"),
                 "Sector_Median_PB": st.column_config.NumberColumn("Sector Median P/B", format="%.2fx"),
-                "Valuation Score": st.column_config.ProgressColumn("Valuation", 0, 100, format="%.1f"),
-                "Quality Score": st.column_config.ProgressColumn("Quality", 0, 100, format="%.1f"),
+                "Valuation Score": st.column_config.NumberColumn("Valuation", format="%.1f"),
+                "Quality Score": st.column_config.NumberColumn("Quality", format="%.1f"),
             }
         )
 
