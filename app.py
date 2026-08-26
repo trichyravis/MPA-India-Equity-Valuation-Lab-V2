@@ -1,4 +1,5 @@
 
+
 import io
 import time
 import warnings
@@ -17,276 +18,70 @@ warnings.filterwarnings("ignore")
 # PAGE
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="India Valuation & Quality Screener | The Mountain Path Academy",
+    page_title="India P/B • Net Worth • ROE Screener",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed",
 )
 
+# Mountain Path-inspired dark navy/gold visual language
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background:
+            radial-gradient(circle at 15% 10%, rgba(198,155,63,.10), transparent 28%),
+            linear-gradient(135deg, #071526 0%, #0B2038 52%, #071526 100%);
+        color: #F5F7FA;
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg,#081827 0%,#0D2944 100%);
+        border-right: 1px solid rgba(212,175,55,.30);
+    }
+    [data-testid="stSidebar"] * { color: #F5F7FA !important; }
+    h1,h2,h3 { color:#F4D06F !important; }
+    .mp-card {
+        background: rgba(255,255,255,.055);
+        border: 1px solid rgba(212,175,55,.28);
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.20);
+        margin-bottom: 12px;
+    }
+    .mp-note {
+        background: rgba(244,208,111,.08);
+        border-left: 4px solid #D4AF37;
+        padding: 12px 16px;
+        border-radius: 8px;
+    }
+    div[data-testid="stMetric"] {
+        background: rgba(255,255,255,.055);
+        border: 1px solid rgba(212,175,55,.25);
+        padding: 12px;
+        border-radius: 14px;
+    }
+    .stButton > button, .stDownloadButton > button {
+        border: 1px solid #D4AF37 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-# -----------------------------------------------------------------------------
-# BRAND PALETTE — matched to the attached Mountain Path Streamlit app
-# -----------------------------------------------------------------------------
-GOLD  = "#FFD700"
-BLUE  = "#003366"
-MID   = "#004d80"
-CARD  = "#112240"
-TXT   = "#e6f1ff"
-MUTED = "#8892b0"
-GRN   = "#28a745"
-RED   = "#dc3545"
-LB    = "#ADD8E6"
-AMBER = "#f0ad4e"
+st.title("India Valuation & Quality Screener")
+st.caption("Sector-wise ranking of Price-to-Book Value, Net Worth and Return on Equity (ROE)")
 
-LINK_ACADEMY = "https://themountainpathacademy.com"
-LINK_LI      = "https://www.linkedin.com/in/trichyravis"
-LINK_GH      = "https://github.com/trichyravis"
-
-st.html(f"""
-<style>
-  .stApp {{
-    background: linear-gradient(135deg,#1a2332,#243447,#2a3f5f) fixed;
-  }}
-  #MainMenu, header[data-testid="stHeader"], footer {{ visibility: hidden; }}
-  .block-container {{
-    padding-top: 1.2rem;
-    padding-bottom: 2rem;
-    max-width: 1200px;
-  }}
-
-  /* Main text */
-  .stApp, .stApp p, .stApp label, .stApp span {{
-    color: {TXT};
-  }}
-  h1,h2,h3,h4 {{
-    color: {GOLD} !important;
-  }}
-
-  /* Tabs — identical visual treatment to attached app */
-  .stTabs [data-baseweb="tab-list"] {{
-    gap: 6px;
-    background: rgba(17,34,64,.55);
-    padding: 6px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,215,0,.18);
-    flex-wrap: wrap;
-  }}
-  .stTabs [data-baseweb="tab"] {{
-    background: transparent;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    color: #c7d3e8 !important;
-    -webkit-text-fill-color: #c7d3e8 !important;
-  }}
-  .stTabs [data-baseweb="tab"] * {{
-    color: #c7d3e8 !important;
-    -webkit-text-fill-color: #c7d3e8 !important;
-  }}
-  .stTabs [aria-selected="true"] {{
-    background: {GOLD} !important;
-  }}
-  .stTabs [aria-selected="true"],
-  .stTabs [aria-selected="true"] * {{
-    color: {BLUE} !important;
-    -webkit-text-fill-color: {BLUE} !important;
-  }}
-  .stTabs [data-baseweb="tab"] p {{
-    font-size: 14px;
-    font-weight: 600;
-  }}
-
-  /* Sidebar */
-  [data-testid="stSidebar"] {{
-    background: linear-gradient(180deg,#0d1b2a,#112240) !important;
-    border-right: 1px solid rgba(255,215,0,.18);
-  }}
-  [data-testid="stSidebar"] * {{
-    color: {TXT} !important;
-    -webkit-text-fill-color: {TXT} !important;
-  }}
-
-  /* Widget labels and controls */
-  [data-testid="stWidgetLabel"] *,
-  .stCheckbox *,
-  [data-baseweb="checkbox"] label * {{
-    color: {TXT} !important;
-    -webkit-text-fill-color: {TXT} !important;
-  }}
-  [data-baseweb="select"] > div,
-  [data-baseweb="input"] > div,
-  .stNumberInput input,
-  .stTextInput input {{
-    background: {CARD} !important;
-    color: {TXT} !important;
-  }}
-
-  /* Expander */
-  details, [data-testid="stExpander"] details {{
-    background: {CARD} !important;
-    border: 1px solid rgba(255,215,0,.18) !important;
-    border-radius: 12px !important;
-  }}
-  details summary, details summary *,
-  [data-testid="stExpander"] summary,
-  [data-testid="stExpander"] summary * {{
-    color: {TXT} !important;
-    -webkit-text-fill-color: {TXT} !important;
-  }}
-
-  /* Buttons */
-  .stButton button, .stDownloadButton button {{
-    background: {CARD} !important;
-    border: 1px solid rgba(255,215,0,.35) !important;
-    border-radius: 9px !important;
-  }}
-  .stButton button p, .stButton button span, .stButton button div,
-  .stDownloadButton button p, .stDownloadButton button span,
-  .stDownloadButton button div {{
-    color: {GOLD} !important;
-    -webkit-text-fill-color: {GOLD} !important;
-    font-weight: 700 !important;
-  }}
-
-  /* Slider */
-  .stSlider [data-baseweb="slider"] div[role="slider"] {{
-    background: {GOLD};
-  }}
-
-  /* Metric cards */
-  div[data-testid="stMetric"] {{
-    background: {CARD};
-    border: 1px solid rgba(255,215,0,.16);
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 4px 18px rgba(0,0,0,.25);
-  }}
-  div[data-testid="stMetric"]:hover {{
-    border-color: rgba(255,215,0,.42);
-  }}
-  div[data-testid="stMetricValue"] {{
-    color: {GOLD} !important;
-  }}
-
-  /* Generic branded cards */
-  .mp-card {{
-    background: {CARD};
-    border: 1px solid rgba(255,215,0,.16);
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 14px;
-    box-shadow: 0 4px 18px rgba(0,0,0,.28);
-    user-select: none;
-  }}
-  .mp-card:hover {{
-    border-color: rgba(255,215,0,.42);
-  }}
-  .mp-note {{
-    background: linear-gradient(135deg,{CARD},#16203c);
-    border: 1px solid rgba(255,215,0,.42);
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin: 10px 0 14px 0;
-    color: {TXT};
-  }}
-
-  /* Dataframes */
-  [data-testid="stDataFrame"] {{
-    border: 1px solid rgba(255,215,0,.16);
-    border-radius: 12px;
-    overflow: hidden;
-  }}
-
-  /* File uploader */
-  [data-testid="stFileUploaderDropzone"] {{
-    background: {CARD} !important;
-    border-color: rgba(255,215,0,.28) !important;
-  }}
-
-  /* Divider */
-  hr {{
-    border-color: rgba(255,255,255,.10) !important;
-  }}
-</style>
-""")
-
-def html(s: str):
-    st.html(s)
-
-def plotly_theme(fig, height=420, legend=True):
-    fig.update_layout(
-        height=height,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=TXT, family="Inter, Segoe UI, sans-serif", size=13),
-        margin=dict(l=20, r=20, t=50, b=20),
-        hoverlabel=dict(bgcolor=CARD, font_color=TXT, bordercolor=GOLD),
-        legend=dict(
-            bgcolor="rgba(0,0,0,0)",
-            bordercolor="rgba(255,215,0,.2)",
-            borderwidth=1
-        ) if legend else dict(),
-        showlegend=legend,
-    )
-    fig.update_xaxes(
-        gridcolor="rgba(255,255,255,.06)",
-        zeroline=False,
-        linecolor="rgba(255,255,255,.2)"
-    )
-    fig.update_yaxes(
-        gridcolor="rgba(255,255,255,.06)",
-        zeroline=False,
-        linecolor="rgba(255,255,255,.2)"
-    )
-    return fig
-
-# -----------------------------------------------------------------------------
-# HEADER — matched to attached Streamlit app
-# -----------------------------------------------------------------------------
-html(f"""
-<div style="background:linear-gradient(90deg,{BLUE},{MID});border-radius:16px;
-     padding:22px 26px;border:1px solid rgba(255,215,0,.3);user-select:none;
-     box-shadow:0 6px 24px rgba(0,0,0,.35);margin-bottom:8px;">
-  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-    <div style="font-size:34px;-webkit-text-fill-color:initial;">🏔️</div>
-    <div style="flex:1;min-width:260px;">
-      <div style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-size:13px;
-           font-weight:700;letter-spacing:2px;">
-           THE MOUNTAIN PATH ACADEMY · WORLD OF FINANCE
-      </div>
-      <div style="color:#ffffff;-webkit-text-fill-color:#ffffff;font-size:26px;
-           font-weight:800;line-height:1.15;margin-top:2px;">
-           India Valuation & Quality Screener
-      </div>
-      <div style="color:{LB};-webkit-text-fill-color:{LB};font-size:14px;margin-top:3px;">
-           Sector-wise Price-to-Book · Net Worth · ROE Ranking & 10-Year Fundamental Analysis
-      </div>
+st.markdown(
+    """
+    <div class="mp-card">
+      <b>Purpose.</b> Identify financially stronger, reasonably valued listed Indian companies by combining
+      <b>valuation (P/B)</b>, <b>profitability (ROE)</b> and <b>balance-sheet strength (Net Worth)</b>.
+      The ranking is a screening model — not an investment recommendation.
     </div>
-    <div style="text-align:right;min-width:170px;">
-      <div style="color:{MUTED};-webkit-text-fill-color:{MUTED};font-size:12px;">Educational Series by</div>
-      <div style="color:#ffffff;-webkit-text-fill-color:#ffffff;font-size:15px;font-weight:700;">
-           Prof. V. Ravichandran
-      </div>
-      <a href="{LINK_ACADEMY}" target="_blank"
-         style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-size:12px;text-decoration:none;">
-         themountainpathacademy.com ↗
-      </a>
-    </div>
-  </div>
-</div>
-""")
-
-html(f"""
-<div class="mp-card" style="border-color:rgba(255,215,0,.30);">
-  <div style="color:{TXT};-webkit-text-fill-color:{TXT};font-size:14px;line-height:1.6;">
-    <b style="color:{GOLD};-webkit-text-fill-color:{GOLD};">Purpose:</b>
-    identify financially stronger, reasonably valued Indian listed companies by combining
-    <b>P/B</b>, <b>ROE</b> and <b>Net Worth</b>, then compare the metrics sector-wise and through time.
-    The app is designed for valuation analysis and classroom use — not as an investment recommendation.
-  </div>
-</div>
-""")
+    """,
+    unsafe_allow_html=True,
+)
 
 NIFTY500_URL = "https://www.niftyindices.com/IndexConstituent/ind_nifty500list.csv"
 
@@ -773,12 +568,8 @@ def excel_bytes(df, summary_df):
 universe, universe_source = load_nifty500()
 
 with st.sidebar:
-    st.markdown(f"""
-    <div style="color:{GOLD};font-size:18px;font-weight:800;margin-bottom:2px;">⚙️ Screener Controls</div>
-    <div style="color:{MUTED};font-size:12px;margin-bottom:14px;">
-      Universe: {universe_source}
-    </div>
-    """, unsafe_allow_html=True)
+    st.header("Screener Controls")
+    st.caption(f"Universe source: {universe_source}")
 
     mode = st.radio(
         "Coverage",
@@ -864,12 +655,6 @@ c3.metric("Sectors", f"{screened['Sector'].nunique():,}" if len(screened) else "
 c4.metric("Median P/B", f"{screened['P/B (x)'].median():.2f}x" if len(screened) else "—")
 c5.metric("Median ROE", f"{screened['ROE (%)'].median():.2f}%" if len(screened) else "—")
 
-st.markdown(
-    f"<div style='color:{GOLD};font-weight:700;font-size:15px;margin:10px 0 8px 0;'>"
-    f"VALUATION LAB · INTERACTIVE ANALYSIS</div>",
-    unsafe_allow_html=True,
-)
-
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     ["🏆 Sector Leaders", "📋 Full Ranking", "📈 10-Year History", "📊 Cross-Section Charts", "🧮 Methodology", "⬇️ Excel"]
 )
@@ -901,7 +686,7 @@ with tab1:
                 "Net Worth (₹ Cr)": "₹{:,.0f}",
                 "Market Cap (₹ Cr)": "₹{:,.0f}",
                 "Composite Score": "{:.2f}",
-            }),
+            }).background_gradient(subset=["Composite Score"]),
             use_container_width=True,
             height=620,
         )
@@ -917,7 +702,7 @@ with tab2:
             "Net Worth (₹ Cr)": "₹{:,.0f}",
             "Market Cap (₹ Cr)": "₹{:,.0f}",
             "Composite Score": "{:.2f}",
-        }),
+        }).background_gradient(subset=["Composite Score"]),
         use_container_width=True,
         height=680,
     )
@@ -996,19 +781,22 @@ with tab3:
                     hist, x="Fiscal Year", y="P/B (x)", markers=True,
                     title=f"{hist_company} — Price-to-Book trend"
                 )
-                st.plotly_chart(plotly_theme(fig_pb, height=390, legend=False), use_container_width=True)
+                fig_pb.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_pb, use_container_width=True)
             with g2:
                 fig_roe = px.line(
                     hist, x="Fiscal Year", y="ROE (%)", markers=True,
                     title=f"{hist_company} — ROE trend"
                 )
-                st.plotly_chart(plotly_theme(fig_roe, height=390, legend=False), use_container_width=True)
+                fig_roe.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_roe, use_container_width=True)
 
             fig_nw = px.bar(
                 hist, x="Fiscal Year", y="Net Worth (₹ Cr)",
                 title=f"{hist_company} — Net Worth growth (₹ crore)"
             )
-            st.plotly_chart(plotly_theme(fig_nw, height=420, legend=False), use_container_width=True)
+            fig_nw.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_nw, use_container_width=True)
 
             st.markdown("#### P/B–ROE relationship through time")
             fig_rel = px.scatter(
@@ -1020,7 +808,8 @@ with tab3:
                 hover_data=["FY-end Price (₹)", "Book Value/Share (₹)"],
                 title="Does a higher ROE command a higher P/B multiple?"
             )
-            st.plotly_chart(plotly_theme(fig_rel, height=460), use_container_width=True)
+            fig_rel.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_rel, use_container_width=True)
 
             hist_xls = historical_excel_bytes(hist, hist_company)
             st.download_button(
@@ -1066,7 +855,8 @@ with tab3:
                 st.dataframe(uh, use_container_width=True)
                 for metric in ["P/B (x)", "Net Worth (₹ Cr)", "ROE (%)"]:
                     fig_u = px.line(uh, x="Fiscal Year", y=metric, markers=True, title=f"Uploaded history — {metric}")
-                    st.plotly_chart(plotly_theme(fig_u, height=390, legend=False), use_container_width=True)
+                    fig_u.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                    st.plotly_chart(fig_u, use_container_width=True)
         except Exception as e:
             st.error(f"Could not read uploaded CSV: {e}")
 
@@ -1092,8 +882,13 @@ with tab4:
             },
             title="P/B versus ROE — bubble size reflects market capitalisation",
         )
-        fig.update_layout(legend_title_text="Sector")
-        st.plotly_chart(plotly_theme(fig, height=470), use_container_width=True)
+        fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            legend_title_text="Sector",
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
         top20 = screened.nlargest(20, "Composite Score").sort_values("Composite Score")
         fig2 = px.bar(
@@ -1104,7 +899,12 @@ with tab4:
             hover_data=["Sector", "P/B (x)", "ROE (%)", "Net Worth (₹ Cr)"],
             title="Top 20 composite rankings",
         )
-        st.plotly_chart(plotly_theme(fig2, height=520, legend=False), use_container_width=True)
+        fig2.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
 with tab5:
     st.subheader("How the ranking works")
@@ -1170,41 +970,8 @@ with tab6:
     )
     st.caption("Workbook contains Full Screener, Sector Leaders and Methodology tabs.")
 
-
-html(f"""
-<div style="margin-top:20px;background:linear-gradient(90deg,{BLUE},{MID});border-radius:16px;
-     padding:20px 26px;border:1px solid rgba(255,215,0,.3);user-select:none;">
-  <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;">
-    <div>
-      <div style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-size:15px;font-weight:800;">
-        The Mountain Path — World of Finance
-      </div>
-      <div style="color:{LB};-webkit-text-fill-color:{LB};font-size:12.5px;margin-top:2px;">
-        Bridging Theory with Practice · Excellence in Financial Education
-      </div>
-      <div style="color:{MUTED};-webkit-text-fill-color:{MUTED};font-size:11.5px;margin-top:6px;">
-        Prof. V. Ravichandran · Finance, Risk, Analytics & Valuation
-      </div>
-    </div>
-    <div style="text-align:right;display:flex;flex-direction:column;gap:6px;">
-      <a href="{LINK_ACADEMY}" target="_blank"
-         style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-weight:700;font-size:13px;text-decoration:none;">
-         🌐 themountainpathacademy.com ↗
-      </a>
-      <a href="{LINK_LI}" target="_blank"
-         style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-weight:700;font-size:13px;text-decoration:none;">
-         in · LinkedIn ↗
-      </a>
-      <a href="{LINK_GH}" target="_blank"
-         style="color:{GOLD};-webkit-text-fill-color:{GOLD};font-weight:700;font-size:13px;text-decoration:none;">
-         ⌥ GitHub ↗
-      </a>
-    </div>
-  </div>
-  <div style="color:{MUTED};-webkit-text-fill-color:{MUTED};font-size:11px;margin-top:12px;
-       border-top:1px solid rgba(255,255,255,.1);padding-top:8px;">
-    Educational content only — not investment advice. Market and fundamental feeds may be delayed,
-    incomplete or restated. Validate key figures against the latest company filings before use.
-  </div>
-</div>
-""")
+st.markdown("---")
+st.caption(
+    "Data is obtained from public market/fundamental feeds and may be delayed, incomplete or restated. "
+    "Validate key figures against the company's latest audited/quarterly financial statements before making decisions."
+)
