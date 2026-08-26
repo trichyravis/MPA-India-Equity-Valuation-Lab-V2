@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-BUILD_ID = "MPA-VALUATION-V2.3-EXPLAINED"
+BUILD_ID = "MPA-VALUATION-V2.4-MODEL-WALKTHROUGH"
 
 # -----------------------------------------------------------------------------
 # BRAND PALETTE — follows the RBI Spread app
@@ -197,6 +197,54 @@ st.html(f"""
     color: {TXT} !important;
     -webkit-text-fill-color: {TXT} !important;
   }}
+
+  /* Model walkthrough */
+  .flow-row {{
+    display:flex;
+    gap:10px;
+    align-items:stretch;
+    flex-wrap:wrap;
+    margin:10px 0 18px 0;
+  }}
+  .flow-step {{
+    flex:1 1 135px;
+    min-width:135px;
+    background:{CARD};
+    border:1px solid rgba(255,215,0,.20);
+    border-radius:12px;
+    padding:12px 13px;
+  }}
+  .flow-num {{
+    color:{GOLD};
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.5px;
+  }}
+  .flow-title {{
+    color:#ffffff;
+    font-weight:750;
+    font-size:14px;
+    margin-top:3px;
+  }}
+  .flow-text {{
+    color:#b9c6da;
+    font-size:12px;
+    line-height:1.45;
+    margin-top:5px;
+  }}
+  .pass-box {{
+    background:rgba(40,167,69,.12);
+    border:1px solid rgba(40,167,69,.55);
+    border-radius:12px;
+    padding:14px 16px;
+  }}
+  .fail-box {{
+    background:rgba(220,53,69,.10);
+    border:1px solid rgba(220,53,69,.55);
+    border-radius:12px;
+    padding:14px 16px;
+  }}
+
 </style>
 """)
 
@@ -322,6 +370,30 @@ def add_explainer(title, body_md, latex_lines=None):
             for eq in latex_lines:
                 st.latex(eq)
         st.markdown(body_md)
+
+
+
+def walkthrough_pass_reason(row, min_roe, max_pb, require_positive_nw):
+    checks = []
+
+    pb = row.get("P/B (x)", np.nan)
+    roe = row.get("ROE (%)", np.nan)
+    nw = row.get("Net Worth (₹ Cr)", np.nan)
+
+    pb_ok = np.isfinite(pb) and pb > 0 and pb <= max_pb
+    roe_ok = np.isfinite(roe) and roe >= min_roe
+    nw_ok = (not require_positive_nw) or (np.isfinite(nw) and nw > 0)
+
+    checks.append(("P/B filter", pb, f"0 < P/B ≤ {max_pb:.2f}", pb_ok))
+    checks.append(("ROE filter", roe, f"ROE ≥ {min_roe:.2f}%", roe_ok))
+    checks.append((
+        "Net Worth filter",
+        nw,
+        "Net Worth > 0" if require_positive_nw else "Not required",
+        nw_ok
+    ))
+
+    return checks, all(x[3] for x in checks)
 
 
 # -----------------------------------------------------------------------------
@@ -944,6 +1016,7 @@ html(f"""
 # -----------------------------------------------------------------------------
 tabs = st.tabs([
     "🏠 Dashboard",
+    "🧭 How the Model Works",
     "🏆 Sector Leaders",
     "🏢 Company Lab",
     "📈 10-Year History",
@@ -1047,10 +1120,245 @@ The purpose is to compare sectors on a like-for-like basis without assuming that
         </div>
         """)
 
+
 # -----------------------------------------------------------------------------
-# TAB 2 — SECTOR LEADERS
+# TAB 2 — HOW THE MODEL WORKS
 # -----------------------------------------------------------------------------
 with tabs[1]:
+    st.subheader("How the Valuation & Ranking Model Works")
+    st.markdown(
+        "This tab follows **one company from the investible universe to the final rank**. "
+        "It shows what is selected, what is filtered, what is calculated, and why a company passes or fails."
+    )
+
+    html(f"""
+    <div class="flow-row">
+      <div class="flow-step">
+        <div class="flow-num">STEP 1</div>
+        <div class="flow-title">Choose Universe</div>
+        <div class="flow-text">Start with NIFTY 100 or NIFTY 500.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 2</div>
+        <div class="flow-title">Sector / Company</div>
+        <div class="flow-text">Use all sectors, selected sectors, or selected NSE symbols.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 3</div>
+        <div class="flow-title">Apply Filters</div>
+        <div class="flow-text">Minimum ROE, maximum P/B and positive Net Worth.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 4</div>
+        <div class="flow-title">Pass / Fail</div>
+        <div class="flow-text">Only companies satisfying every active filter enter ranking.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 5</div>
+        <div class="flow-title">Sector Scoring</div>
+        <div class="flow-text">Valuation, profitability and quality are compared with sector peers.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 6</div>
+        <div class="flow-title">Rank & Signal</div>
+        <div class="flow-text">Weighted scores produce final rank and interpretation.</div>
+      </div>
+    </div>
+    """)
+
+    st.markdown("### Step 1 — Universe selection")
+    st.write(
+        f"The current universe is **{universe_name}**. "
+        "NIFTY 100 gives a large-cap focused universe; NIFTY 500 provides broader market coverage."
+    )
+
+    st.markdown("### Step 2 — Sector and company selection")
+    st.write(
+        f"Current coverage mode: **{coverage}**. "
+        f"After the universe, sector and company selections, **{len(base)} companies** are available for testing."
+    )
+    if sector_filter:
+        st.write("Selected sectors: **" + ", ".join(sector_filter) + "**")
+    else:
+        st.write("No sector restriction is active; all sectors in the selected universe may enter the filter stage.")
+
+    model_labels = (base["Company"] + " (" + base["Symbol"] + ")").tolist()
+    model_choice = st.selectbox(
+        "Choose an illustrative company",
+        model_labels,
+        key="walkthrough_company"
+    )
+    ex = base.loc[
+        (base["Company"] + " (" + base["Symbol"] + ")") == model_choice
+    ].iloc[0]
+
+    st.markdown("### Step 3 — Filter test")
+    checks, passes = walkthrough_pass_reason(ex, min_roe, max_pb, require_positive_nw)
+
+    filter_rows = []
+    for name, value, rule, ok in checks:
+        if name == "P/B filter":
+            shown = f"{value:.2f}x" if np.isfinite(value) else "Unavailable"
+        elif name == "ROE filter":
+            shown = f"{value:.2f}%" if np.isfinite(value) else "Unavailable"
+        else:
+            shown = f"₹{value:,.0f} Cr" if np.isfinite(value) else "Unavailable"
+        filter_rows.append({
+            "Filter": name,
+            "Company value": shown,
+            "Rule": rule,
+            "Result": "PASS" if ok else "FAIL"
+        })
+
+    st.dataframe(pd.DataFrame(filter_rows), use_container_width=True, hide_index=True)
+
+    if passes:
+        html(f"""
+        <div class="pass-box">
+          <div style="color:{GRN};font-weight:800;font-size:15px;">✓ COMPANY PASSES THE ACTIVE FILTERS</div>
+          <div style="color:{TXT};font-size:13px;margin-top:5px;">
+            {ex['Company']} proceeds to sector-relative scoring and ranking.
+          </div>
+        </div>
+        """)
+    else:
+        failed_names = [x[0] for x in checks if not x[3]]
+        html(f"""
+        <div class="fail-box">
+          <div style="color:{RED};font-weight:800;font-size:15px;">✕ COMPANY DOES NOT ENTER THE RANKING</div>
+          <div style="color:{TXT};font-size:13px;margin-top:5px;">
+            Failed filter(s): {", ".join(failed_names)}.
+          </div>
+        </div>
+        """)
+
+    st.markdown("### Step 4 — What happens after a company passes?")
+    st.markdown(
+        """
+Passing the filter only means that a company is **eligible to be evaluated**.  
+The company is then compared with peers in the **same sector**, not with unrelated industries.
+
+The model evaluates three dimensions:
+
+1. **Valuation** — Is P/B attractive relative to sector peers and relative to ROE?
+2. **Profitability** — How strong is ROE relative to sector peers?
+3. **Quality** — Is Net Worth growing, are earnings consistently positive, and is ROE reasonably stable?
+"""
+    )
+
+    st.markdown("### Step 5 — Valuation calculation")
+    st.latex(
+        r"\text{Valuation Score}=0.60(\text{Sector P/B Score})+0.40(\text{P/B-to-ROE Score})"
+    )
+    st.write(
+        "**Sector P/B Score:** lower positive P/B gets a higher percentile score within the sector."
+    )
+    st.latex(r"\text{P/B-to-ROE}=\frac{P/B}{ROE(\%)}")
+    st.write(
+        "A lower P/B-to-ROE value means the investor is paying a smaller book-value multiple "
+        "for each unit of ROE. It is used as a relative valuation diagnostic."
+    )
+
+    st.markdown("### Step 6 — Profitability and Quality calculations")
+    st.latex(r"\text{Profitability Score}=\text{Sector Percentile of ROE}")
+    st.latex(
+        r"\text{Quality Score}=0.45(\text{Net Worth Growth Score})"
+        r"+0.30(\text{Earnings Consistency Score})"
+        r"+0.25(\text{ROE Stability Score})"
+    )
+    st.markdown(
+        """
+- **Net Worth Growth:** higher growth in shareholders' equity receives a higher score.
+- **Earnings Consistency:** a higher proportion of positive annual profits receives a higher score.
+- **ROE Stability:** lower volatility of ROE receives a higher score.
+"""
+    )
+
+    st.markdown("### Step 7 — Composite score and rank")
+    total_weight = w_val + w_prof + w_quality
+    st.latex(
+        rf"\text{{Composite Score}}="
+        rf"\frac{{{w_val}(\text{{Valuation}})+{w_prof}(\text{{Profitability}})+"
+        rf"{w_quality}(\text{{Quality}})}}{{{total_weight}}}"
+    )
+    st.write(
+        f"Current sidebar weights: **Valuation {w_val}% · Profitability {w_prof}% · Quality {w_quality}%**."
+    )
+
+    if passes and len(screened):
+        match = screened[screened["Symbol"] == ex["Symbol"]]
+        if len(match):
+            sx = match.iloc[0]
+            st.markdown("### Step 8 — Actual outcome for the selected company")
+
+            x1,x2,x3,x4 = st.columns(4)
+            x1.metric("Valuation", f"{sx['Valuation Score']:.1f}")
+            x2.metric("Profitability", f"{sx['Profitability Score']:.1f}")
+            x3.metric("Quality", f"{sx['Quality Score']:.1f}")
+            x4.metric("Composite", f"{sx['Composite Score']:.1f}")
+
+            sector_n = len(screened[screened["Sector"] == sx["Sector"]])
+            st.info(explain_rank(sx, sector_n))
+
+            calc = (
+                sx["Valuation Score"] * w_val
+                + sx["Profitability Score"] * w_prof
+                + sx["Quality Score"] * w_quality
+            ) / total_weight
+
+            st.latex(
+                rf"\text{{Composite}}="
+                rf"\frac{{{w_val}({sx['Valuation Score']:.1f})+"
+                rf"{w_prof}({sx['Profitability Score']:.1f})+"
+                rf"{w_quality}({sx['Quality Score']:.1f})}}{{{total_weight}}}"
+                rf"={calc:.1f}"
+            )
+
+            st.markdown("#### How is the interpretation signal assigned?")
+            signal_df = pd.DataFrame({
+                "Signal":[
+                    "Attractive Relative Valuation",
+                    "Premium / High Quality",
+                    "Expensive vs Fundamentals",
+                    "Potential Value Trap",
+                    "Fair / Mixed"
+                ],
+                "Rule":[
+                    "Valuation ≥ 70 and Quality ≥ 65",
+                    "Valuation ≥ 55 and Quality ≥ 75",
+                    "Valuation < 35 and Quality ≥ 70",
+                    "Valuation ≥ 65 and Quality < 40",
+                    "All other combinations"
+                ]
+            })
+            st.dataframe(signal_df, use_container_width=True, hide_index=True)
+            st.success(f"Current signal for {sx['Company']}: {sx['Signal']}")
+
+    st.markdown("### Step 9 — Separate Justified P/B cross-check")
+    st.write(
+        "The percentile ranking and the Justified P/B model are deliberately separate. "
+        "Justified P/B asks what multiple may be supported by ROE, long-run growth and cost of equity."
+    )
+    st.latex(r"\text{Justified P/B}=\frac{ROE-g}{K_e-g}")
+    st.write(
+        f"Current assumptions: **Cost of Equity = {cost_equity:.1f}%** and "
+        f"**Long-run Growth = {growth:.1f}%**."
+    )
+
+    html(f"""
+    <div class="mp-card" style="border-color:rgba(255,215,0,.40);margin-top:14px;">
+      <div style="color:{GOLD};font-weight:800;">Model in one line</div>
+      <div style="color:{TXT};font-size:14px;line-height:1.55;margin-top:5px;">
+        <b>Universe → Sector/Company → Filters → Pass/Fail → Sector Scores → Composite → Rank → Signal → Justified P/B cross-check.</b>
+      </div>
+    </div>
+    """)
+
+
+# -----------------------------------------------------------------------------
+# TAB 3 — SECTOR LEADERS
+# -----------------------------------------------------------------------------
+with tabs[2]:
     st.subheader("Sector-Relative Valuation Leaders")
 
     if len(screened):
@@ -1135,9 +1443,9 @@ The composite score is the weighted average of these three dimensions.
         st.plotly_chart(plotly_theme(fig, 470), use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 3 — COMPANY LAB
+# TAB 4 — COMPANY LAB
 # -----------------------------------------------------------------------------
-with tabs[2]:
+with tabs[3]:
     st.subheader("Company Valuation Lab")
 
     if len(screened):
@@ -1231,9 +1539,9 @@ Current weights: Valuation **{w_val}%**, Profitability **{w_prof}%**, Quality **
             )
 
 # -----------------------------------------------------------------------------
-# TAB 4 — 10Y HISTORY
+# TAB 5 — 10Y HISTORY
 # -----------------------------------------------------------------------------
-with tabs[3]:
+with tabs[4]:
     st.subheader("10-Year Historical Context")
     st.caption(
         "History is reconstructed from annual consolidated financial statements where available. "
@@ -1315,9 +1623,9 @@ Historical numbers are intended for analysis and teaching; validate against comp
             st.plotly_chart(plotly_theme(fig, 420, legend=False), use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 5 — VALUATION ENGINE
+# TAB 6 — VALUATION ENGINE
 # -----------------------------------------------------------------------------
-with tabs[4]:
+with tabs[5]:
     st.subheader("Justified P/B Valuation Engine")
     st.markdown(
         "The Gordon-growth relationship links the justified P/B multiple to ROE, long-run growth and cost of equity."
@@ -1432,9 +1740,9 @@ This means the market multiple is being compared with the multiple implied by th
         """)
 
 # -----------------------------------------------------------------------------
-# TAB 6 — METHODOLOGY
+# TAB 7 — METHODOLOGY
 # -----------------------------------------------------------------------------
-with tabs[5]:
+with tabs[6]:
     st.subheader("Methodology")
 
     st.markdown("### 1. Price-to-Book")
@@ -1510,9 +1818,9 @@ with tabs[5]:
     )
 
 # -----------------------------------------------------------------------------
-# TAB 7 — EXCEL
+# TAB 8 — EXCEL
 # -----------------------------------------------------------------------------
-with tabs[6]:
+with tabs[7]:
     st.subheader("Download Analysis Workbook")
 
     if len(screened):

@@ -29,3 +29,19 @@ Build: MPA-VALUATION-V2.0-20260826
 - Added historical measure explanations and table-column definitions.
 
 Build: MPA-VALUATION-V2.3-EXPLAINED
+
+
+## V2.4 — How the Model Works
+Added an illustrated model walkthrough tab covering:
+- universe selection
+- sector/company selection
+- active filter settings
+- real company PASS/FAIL filter demonstration
+- sector-relative valuation calculation
+- profitability calculation
+- quality calculation
+- dynamic composite score
+- sector rank and interpretation signal
+- Justified P/B as a separate valuation cross-check
+
+Build: MPA-VALUATION-V2.4-MODEL-WALKTHROUGH
